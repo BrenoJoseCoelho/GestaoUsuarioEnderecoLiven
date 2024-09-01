@@ -1,0 +1,23 @@
+{
+  "name": "gestaousuarioenderecoliven",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrenoJoseCoelho/GestaoUsuarioEnderecoLiven.git"
+  },
+  "author": "Breno Coelho",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BrenoJoseCoelho/GestaoUsuarioEnderecoLiven/issues"
+  },
+  "homepage": "https://github.com/BrenoJoseCoelho/GestaoUsuarioEnderecoLiven#readme",
+  "dependencies": {
+    "express": "^4.19.2",
+    "typescript": "^5.5.4"
+  }
+}
