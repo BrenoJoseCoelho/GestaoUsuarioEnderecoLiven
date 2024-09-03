@@ -1,0 +1,12 @@
+version: '3'
+services:
+  db:
+    image: 'postgres:latest'
+    environment:
+       POSTGRES_PASSWORD: postgres123
+       POSTGRES_USER: postgres
+       POSTGRES_DB: liven
+    volumes:
+      - ./pgdata:/var/lib/postgres/data
+    ports:
+      - "5433:5432"
