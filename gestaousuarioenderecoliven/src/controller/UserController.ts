@@ -1,6 +1,6 @@
 import { Repository } from "typeorm";
 import { User } from "../entity/User";
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { AppDataSource } from "../data-source";
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
@@ -13,19 +13,6 @@ export class UserController {
   constructor() {
     this._repo = AppDataSource.getRepository(User);
   }
-  async login(req: Request, res: Response) {
-    const { email, password } = req.body;
-
-    const user = await this._repo.findOne({ where: { email } });
-
-    if (!user || !await bcrypt.compare(password, user.password)) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'defaultSecret', { expiresIn: '1h' });
-
-    res.json({ token });
-}
  async register(userDTO: UserDto) {
         // Validação dos dados de entrada
         const { valid, errors } = validateUser(userDTO);
@@ -44,14 +31,15 @@ export class UserController {
         if (existingCpf) {
             throw new Error('CPF already in use');
         }
-
+console.log(userDTO.password);
         // Criptografar a senha
-        const hashedPassword = await bcrypt.hash(userDTO.password, 10);
+        const hashedPassword = await bcrypt.hashSync(userDTO.password, 10);
+        console.log(userDTO.password);
+        userDTO.password =hashedPassword;
 
         // Criação do usuário
         const user = this._repo.create({
             ...userDTO,
-            password: hashedPassword, // Salva a senha criptografada
         });
 
         // Salva o usuário no banco
