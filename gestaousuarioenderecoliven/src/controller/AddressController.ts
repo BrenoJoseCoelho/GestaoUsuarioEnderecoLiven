@@ -1,4 +1,4 @@
-import { Repository } from "typeorm";
+import { Repository, ILike } from "typeorm";
 import { Address } from "../entity/Address";
 import { AppDataSource } from "../data-source";
 import { validateAddress } from "../utils/validators";
@@ -59,5 +59,19 @@ export class AddressController {
       return true;
     }
     return false;
+  }
+
+  async recuperarEnderecosPorPais(country: string) {
+    if (typeof country !== 'string') {
+      throw new Error('Country must be a string');
+    }
+
+    const addresses = await this._repo.find({
+      where: {
+        country: ILike(`%${country}%`)
+    }
+    });
+
+    return addresses;
   }
 }

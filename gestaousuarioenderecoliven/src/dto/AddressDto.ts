@@ -4,4 +4,5 @@ export interface AddressDto {
     state: string;
     zipcode: string;
     userId: number;
+    country: string;
   }
