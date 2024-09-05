@@ -4,7 +4,6 @@ import { AppDataSource } from "../data-source";
 import { validateAddress } from "../utils/validators";
 import { AddressDto } from "../dto/AddressDto";
 
-// Definindo tipos de erro personalizados para melhor tratamento
 class ValidationError extends Error {}
 class NotFoundError extends Error {}
 

@@ -47,7 +47,6 @@ export class AuthController {
                 data: { token }
             });
         } catch (error) {
-            console.error(error);
             res.status(500).json({
                 statusCode: 500,
                 message: error.message
@@ -69,7 +68,6 @@ export class AuthController {
             jwt.verify(token, process.env.SECRET);
             next();
         } catch (error) {
-            console.error(error);
             res.status(500).json({
                 statusCode: 500,
                 message: "Token não válido."

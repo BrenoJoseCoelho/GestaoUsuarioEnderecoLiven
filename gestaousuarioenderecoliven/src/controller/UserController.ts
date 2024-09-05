@@ -2,9 +2,7 @@ import { Repository } from "typeorm";
 import { User } from "../entity/User";
 import * as bcrypt from 'bcrypt';
 import { AppDataSource } from "../data-source";
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { validateEmail, validateCPF, validateUser } from "../utils/validators";
+import {validateUser } from "../utils/validators";
 import { UserDto } from "../dto/UserDto";
 
 export class UserController {
