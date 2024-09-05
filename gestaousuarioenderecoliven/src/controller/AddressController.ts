@@ -4,6 +4,10 @@ import { AppDataSource } from "../data-source";
 import { validateAddress } from "../utils/validators";
 import { AddressDto } from "../dto/AddressDto";
 
+// Definindo tipos de erro personalizados para melhor tratamento
+class ValidationError extends Error {}
+class NotFoundError extends Error {}
+
 export class AddressController {
   private _repo: Repository<Address>;
 
@@ -11,67 +15,96 @@ export class AddressController {
     this._repo = AppDataSource.getRepository(Address);
   }
 
-  async salvar(addressDTO: AddressDto) {
-    const { valid, errors } = validateAddress(addressDTO);
-    if (!valid) {
-      throw new Error(`Validation failed: ${errors.join(", ")}`);
-    }
+  async salvar(addressDTO: AddressDto): Promise<Address> {
+    try {
+      const { valid, errors } = validateAddress(addressDTO);
+      if (!valid) {
+        throw new ValidationError(errors.join(", "));
+      }
 
-    const address = this._repo.create(addressDTO);
-    const addressSalvo = await this._repo.save(address);
-    return addressSalvo;
+      const address = this._repo.create(addressDTO);
+      return await this._repo.save(address);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; 
+      }
+      throw new Error("Internal Server Error");
+    }
   }
 
-  async recuperarPorUsuario(userId: number) {
-    const addresses = await this._repo.find({
-      where: { user: { id: userId } },
-    });
-    return addresses;
+  async recuperarPorUsuario(userId: number): Promise<Address[]> {
+    try {
+      return await this._repo.find({
+        where: { user: { id: userId } },
+      });
+    } catch {
+      throw new Error("Internal Server Error");
+    }
   }
 
-  async recuperarPorId(id: number) {
-    const address = await this._repo.findOne({
-      where: { id },
-    });
-    if (!address) {
-      throw new Error(`Address with ID ${id} not found.`);
+  async recuperarPorId(id: number): Promise<Address> {
+    try {
+      const address = await this._repo.findOneBy({ id });
+      if (!address) {
+        throw new NotFoundError(`Address with ID ${id} not found.`);
+      }
+      return address;
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error; 
+      }
+      throw new Error("Internal Server Error");
     }
-    return address;
   }
 
-  async atualizar(id: number, dadosAtualizados: Partial<Address>) {
-    const address = await this.recuperarPorId(id);
+  async atualizar(id: number, dadosAtualizados: Partial<AddressDto>): Promise<Address> {
+    try {
+      const existingAddress = await this.recuperarPorId(id);
 
-    const { valid, errors } = validateAddress({ ...address, ...dadosAtualizados });
-    if (!valid) {
-      throw new Error(`Validation failed: ${errors.join(", ")}`);
+      const { valid, errors } = validateAddress({ ...existingAddress, ...dadosAtualizados });
+      if (!valid) {
+        throw new ValidationError(errors.join(", "));
+      }
+
+      await this._repo.update(id, dadosAtualizados);
+      return this.recuperarPorId(id);
+    } catch (error) {
+      if (error instanceof ValidationError || error instanceof NotFoundError) {
+        throw error; 
+      }
+      throw new Error("Internal Server Error");
     }
-
-    await this._repo.update(id, dadosAtualizados);
-    const addressAtualizado = await this.recuperarPorId(id);
-    return addressAtualizado;
   }
 
-  async remover(id: number) {
-    const address = await this.recuperarPorId(id);
-    if (address) {
-      await this._repo.remove(address);
-      return true;
+  async remover(id: number): Promise<boolean> {
+    try {
+      const address = await this.recuperarPorId(id);
+      if (address) {
+        await this._repo.remove(address);
+        return true;
+      }
+      return false;
+    } catch {
+      throw new Error("Internal Server Error");
     }
-    return false;
   }
 
-  async recuperarEnderecosPorPais(country: string) {
-    if (typeof country !== 'string') {
-      throw new Error('Country must be a string');
-    }
+  async recuperarEnderecosPorPais(country: string): Promise<Address[]> {
+    try {
+      if (typeof country !== 'string' || !country.trim()) {
+        throw new ValidationError('Country must be a non-empty string');
+      }
 
-    const addresses = await this._repo.find({
-      where: {
-        country: ILike(`%${country}%`)
+      return await this._repo.find({
+        where: {
+          country: ILike(`%${country}%`)
+        }
+      });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; 
+      }
+      throw new Error("Internal Server Error");
     }
-    });
-
-    return addresses;
   }
 }

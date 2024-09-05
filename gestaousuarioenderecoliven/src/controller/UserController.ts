@@ -13,77 +13,92 @@ export class UserController {
   constructor() {
     this._repo = AppDataSource.getRepository(User);
   }
- async register(userDTO: UserDto) {
-        // Validação dos dados de entrada
-        const { valid, errors } = validateUser(userDTO);
-        if (!valid) {
-            throw new Error(`Validation failed: ${errors.join(", ")}`);
-        }
 
-        // Verifica se o email já está em uso
-        const existingUser = await this._repo.findOneBy({ email: userDTO.email });
-        if (existingUser) {
-            throw new Error('Email already in use');
-        }
+  async register(userDTO: UserDto): Promise<User> {
+    try {
+      const { valid, errors } = validateUser(userDTO);
+      if (!valid) {
+        throw new ValidationError(errors.join(", "));
+      }
 
-        // Verifica se o CPF já está em uso
-        const existingCpf = await this._repo.findOneBy({ cpf: userDTO.cpf });
-        if (existingCpf) {
-            throw new Error('CPF already in use');
-        }
-console.log(userDTO.password);
-        // Criptografar a senha
-        const hashedPassword = await bcrypt.hashSync(userDTO.password, 10);
-        console.log(userDTO.password);
-        userDTO.password =hashedPassword;
+      const existingUser = await this._repo.findOneBy({ email: userDTO.email });
+      if (existingUser) {
+        throw new ConflictError('Email already in use');
+      }
 
-        // Criação do usuário
-        const user = this._repo.create({
-            ...userDTO,
-        });
+      const existingCpf = await this._repo.findOneBy({ cpf: userDTO.cpf });
+      if (existingCpf) {
+        throw new ConflictError('CPF already in use');
+      }
 
-        // Salva o usuário no banco
-        const userSalvo = await this._repo.save(user);
+      const hashedPassword = await bcrypt.hash(userDTO.password, 10);
+      userDTO.password = hashedPassword;
 
-        return userSalvo;
+      const user = this._repo.create(userDTO);
+      return await this._repo.save(user);
+    } catch (error) {
+      throw error; 
     }
-
-  async recuperarTodos() {
-    const users = await this._repo.find();
-    return users;
   }
 
-  async recuperarPorId(id: number) {
-    const user = await this._repo.findOne({
-      where: { id },
-      relations: ["addresses"],
-    });
-    if (!user) {
-      throw new Error(`User with ID ${id} not found.`);
+  async recuperarTodos(): Promise<User[]> {
+    try {
+      return await this._repo.find();
+    } catch (error) {
+      throw new Error('Error retrieving users');
     }
-    return user;
   }
 
-  async atualizar(id: number, dadosAtualizados: Partial<User>) {
-    const user = await this.recuperarPorId(id);
-
-    // Validação do usuário
-    const { valid, errors } = validateUser({ ...user, ...dadosAtualizados });
-    if (!valid) {
-      throw new Error(`Validation failed: ${errors.join(", ")}`);
+  async recuperarPorId(id: number): Promise<User> {
+    try {
+      const user = await this._repo.findOne({
+        where: { id },
+        relations: ["addresses"],
+      });
+      if (!user) {
+        throw new NotFoundError(`User with ID ${id} not found.`);
+      }
+      return user;
+    } catch (error) {
+      throw error; 
     }
-
-    await this._repo.update(id, dadosAtualizados);
-    const userAtualizado = await this.recuperarPorId(id);
-    return userAtualizado;
   }
 
-  async remover(id: number) {
-    const user = await this.recuperarPorId(id);
-    if (user) {
-      await this._repo.remove(user);
-      return true;
+  async atualizar(id: number, dadosAtualizados: Partial<UserDto>): Promise<User> {
+    try {
+      await this.recuperarPorId(id);
+
+      const userDtoToValidate: UserDto = {
+        ...await this.recuperarPorId(id), 
+        ...dadosAtualizados, 
+      } as UserDto; 
+
+      const { valid, errors } = validateUser(userDtoToValidate);
+      if (!valid) {
+        throw new ValidationError(errors.join(", "));
+      }
+
+      await this._repo.update(id, dadosAtualizados);
+      return await this.recuperarPorId(id);
+    } catch (error) {
+      throw error; 
     }
-    return false;
+  }
+
+  async remover(id: number): Promise<boolean> {
+    try {
+      const user = await this.recuperarPorId(id);
+      if (user) {
+        await this._repo.remove(user);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      throw error; 
+    }
   }
 }
+
+class ValidationError extends Error {}
+class ConflictError extends Error {}
+class NotFoundError extends Error {}
