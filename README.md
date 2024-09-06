@@ -119,7 +119,9 @@ Os testes automatizados foram implementados usando Jest, garantindo que o compor
 
 - Testes para todos os endpoints de CRUD de usuários e endereços.
 - Testes para a autenticação JWT.
-
+- 
+** No console após executar os testes aparece um problema do TypeORM, mas se subir no terminal vai conseguir ver que os testes todos passaram**
+  
 Para executar os testes:
 
 ```bash
